@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Christian's Fig Tree</title>
+<style>
+  :root {
+    --navy: #0a0e1a;
+    --dark: #0d1117;
+    --card: #141b2d;
+    --card2: #1a2235;
+    --border: #1e2d4a;
+    --accent: #4a9eff;
+    --accent2: #7b61ff;
+    --red: #ff4560;
+    --red-light: #ff456022;
+    --green: #00e676;
+    --green-light: #00e67622;
+    --muted: #5a7a9a;
+    --text: #c8d8e8;
+    --text2: #8aabb8;
+    --glow: 0 0 20px rgba(74,158,255,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .header { background: var(--dark); border-bottom: 1px solid var(--border); padding: 14px 16px 0; position: sticky; top: 0; z-index: 100; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .app-title { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #4a9eff, #7b61ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.3px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); transition: background 0.3s, box-shadow 0.3s; }
+  .sync-dot.syncing { background: #ffb300; box-shadow: 0 0 8px #ffb300; }
+  .sync-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer; letter-spacing: 0.03em; text-transform: uppercase; transition: color 0.2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 14px; max-width: 600px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  /* ── CARDS ── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .card h3 { font-size: 13px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  input, textarea, select {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--text); font-size: 14px; margin-bottom: 8px; outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(74,158,255,0.1); }
+  textarea { min-height: 70px; resize: vertical; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 11px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: linear-gradient(135deg, #4a9eff, #7b61ff); color: white; width: 100%; }
+  .btn-danger { padding: 4px 10px; background: var(--red-light); color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .btn-green { padding: 4px 10px; background: var(--green-light); color: var(--green); border: 1px solid var(--green); border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .btn-sm { padding: 5px 10px; background: var(--card2); border: 1px solid var(--border); color: var(--text2); border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .btn-archive { padding: 4px 8px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; font-size: 11px; cursor: pointer; }
+
+  /* ── DAY ROW ── */
+  .day-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .day-cell { border-radius: 8px; padding: 6px 3px; text-align: center; font-size: 9px; border: 1px solid var(--border); background: var(--card); }
+  .day-cell .day-name { font-weight: 700; color: var(--muted); }
+  .day-cell .tier-short { margin-top: 1px; font-size: 8px; font-weight: 600; color: var(--accent2); opacity: 0.8; }
+  .day-cell.today { border-color: var(--accent) !important; box-shadow: 0 0 0 2px rgba(74,158,255,0.3); }
+  .day-cell.today .day-name { color: var(--accent) !important; font-weight: 800; }
+
+  /* ── VOTD ── */
+  .votd { background: linear-gradient(135deg, #0d1117, #141b2d); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--glow); }
+  .votd-ref { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .votd-text { font-size: 14px; line-height: 1.6; font-style: italic; color: var(--text); }
+
+  /* ── ITEMS ── */
+  .item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .item:last-child { border-bottom: none; }
+  .item-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .item-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .item-note { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.4; }
+  .row-btns { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+  .expires-soon { font-size: 11px; color: var(--red); margin-top: 3px; }
+  .expires-ok { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── PRAYER TIERS ── */
+  .tier-group { margin-bottom: 8px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .tier-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; background: var(--card); cursor: pointer; user-select: none; }
+  .tier-header-label { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .tier-count { font-size: 11px; color: var(--muted); }
+  .tier-chevron { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+  .tier-body { background: var(--card2); }
+  .drag-handle { font-size: 14px; color: var(--border); cursor: grab; }
+
+  /* ── PERSON CARD ── */
+  .person-card { padding: 12px 13px; border-bottom: 1px solid var(--border); }
+  .person-card:last-child { border-bottom: none; }
+  .person-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .person-tier { font-size: 11px; color: var(--accent2); margin-top: 1px; }
+  .pp-pill { display: inline-block; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--text2); margin: 3px 3px 0 0; }
+
+  /* ── PRAYER POINTS ── */
+  .pt-type-tag { font-size: 10px; padding: 1px 6px; border-radius: 99px; margin-left: 5px; font-weight: 600; }
+  .pt-type-general { background: rgba(74,158,255,0.15); color: var(--accent); }
+  .pt-type-current { background: var(--red-light); color: var(--red); }
+
+  /* ── NOTION ── */
+  .notion-search { display: flex; gap: 8px; margin-bottom: 10px; }
+  .notion-search input { margin: 0; flex: 1; }
+  .notion-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 13px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+  .notion-card:hover { border-color: var(--accent); }
+  .notion-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .notion-meta { font-size: 11px; color: var(--muted); }
+  .notion-body { font-size: 13px; color: var(--text2); margin-top: 8px; line-height: 1.6; display: none; }
+  .notion-body.open { display: block; }
+  .notion-workshop { background: var(--card2); border-radius: 8px; padding: 10px; margin-top: 8px; }
+  .notion-workshop textarea { min-height: 60px; margin-bottom: 6px; }
+
+  /* ── INFO BANNER ── */
+  .info-banner { background: rgba(74,158,255,0.08); border: 1px solid rgba(74,158,255,0.2); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text2); margin-bottom: 10px; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; }
+  .modal h3 { font-size: 16px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-cancel { background: var(--card2); color: var(--muted); border: 1px solid var(--border); }
+  .edit-form label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; margin-top: 10px; }
+  .edit-form label:first-child { margin-top: 0; }
+
+  /* ── LOADING ── */
+  #loading-screen { position: fixed; inset: 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+  .loading-title { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #4a9eff, #7b61ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .loading-sub { font-size: 13px; color: var(--muted); }
+  .loading-bar { width: 120px; height: 2px; background: var(--border); border-radius: 99px; margin-top: 20px; overflow: hidden; }
+  .loading-bar-inner { height: 100%; width: 40%; background: linear-gradient(90deg, #4a9eff, #7b61ff); border-radius: 99px; animation: loadbar 1.2s infinite; }
+  @keyframes loadbar { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+  .empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loading-title">⚡ Christian's Fig Tree</div>
+  <div class="loading-sub">Loading...</div>
+  <div class="loading-bar"><div class="loading-bar-inner"></div></div>
+</div>
+
+<div class="header">
+  <div class="header-top">
+    <span class="app-title">⚡ Christian's Fig Tree</span>
+    <div class="sync-dot" id="sync-dot"></div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('today')">Today</div>
+    <div class="tab" onclick="switchTab('prayer')">Prayer</div>
+    <div class="tab" onclick="switchTab('prayerpoints')">Points</div>
+    <div class="tab" onclick="switchTab('workshop')">Workshop</div>
+  </div>
+</div>
+
+<!-- TODAY -->
+<div id="today" class="section active">
+  <div class="day-row" id="day-row"></div>
+  <div class="votd" id="votd-card">
+    <div class="votd-ref" id="votd-ref">Verse of the Day</div>
+    <div class="votd-text" id="votd-text">Loading...</div>
+  </div>
+  <div class="card">
+    <h3>Prayer points today</h3>
+    <div id="today-prayerpoints"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<!-- PRAYER -->
+<div id="prayer" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="font-size:12px;color:var(--muted);">Today: <strong style="color:var(--accent)" id="today-tier-label">—</strong></span>
+    <button class="btn-sm" onclick="manageTierCategories()">⚙️ Manage categories</button>
+  </div>
+  <div id="prayer-list"></div>
+  <div class="card" style="margin-top:10px;">
+    <h3>Add person</h3>
+    <input type="text" id="p-name" placeholder="Name" />
+    <select id="p-tier"></select>
+    <textarea id="p-note" placeholder="Notes (optional)"></textarea>
+    <button class="btn btn-primary" onclick="addPerson()">Add person</button>
+  </div>
+</div>
+
+<!-- PRAYER POINTS -->
+<div id="prayerpoints" class="section">
+  <div class="info-banner">⏱ Default archive: <strong>30 days</strong>. Edit any point to change its window.</div>
+  <div class="prayer-subtabs" style="display:flex;gap:6px;margin-bottom:10px;">
+    <div class="tab active" style="border-radius:8px;background:var(--card);padding:6px 12px;" onclick="filterPP('all')">All</div>
+    <div class="tab" style="border-radius:8px;background:var(--card);padding:6px 12px;" onclick="filterPP('general')">General</div>
+    <div class="tab" style="border-radius:8px;background:var(--card);padding:6px 12px;" onclick="filterPP('current')">Current</div>
+    <div class="tab" style="border-radius:8px;background:var(--card);padding:6px 12px;" onclick="filterPP('archive')">Archive</div>
+  </div>
+  <div id="pp-list"></div>
+  <div class="card">
+    <h3>Add prayer point</h3>
+    <input type="text" id="pp-title" placeholder="Title" />
+    <textarea id="pp-body" placeholder="Context / detail (optional)"></textarea>
+    <select id="pp-type">
+      <option value="general">📘 General — ongoing</option>
+      <option value="current">🔴 Current — archives after set time</option>
+    </select>
+    <input type="text" id="pp-person" placeholder="Person / group" />
+    <input type="text" id="pp-subsection" placeholder="Category / subsection" />
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:13px;color:var(--muted);white-space:nowrap;">Archive after</span>
+      <input type="number" id="pp-days" min="1" max="365" value="30" style="width:70px;margin:0;padding:7px 10px;text-align:center;" />
+      <span style="font-size:13px;color:var(--muted);">days</span>
+    </div>
+    <button class="btn btn-primary" onclick="addPrayerPoint()">Add prayer point</button>
+  </div>
+</div>
+
+<!-- WORKSHOP -->
+<div id="workshop" class="section">
+  <div class="card">
+    <h3>Notion workshop</h3>
+    <div class="notion-search">
+      <input type="text" id="notion-search" placeholder="Search pages..." oninput="filterNotionPages()" />
+    </div>
+    <div id="notion-pages"><div class="empty">Loading Notion pages...</div></div>
+  </div>
+  <div class="card" id="notion-detail-card" style="display:none;">
+    <h3 id="notion-detail-title">Page</h3>
+    <div id="notion-detail-body" style="font-size:13px;color:var(--text2);line-height:1.7;"></div>
+    <div class="notion-workshop" style="margin-top:12px;">
+      <div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px;">💡 Workshop notes</div>
+      <textarea id="workshop-notes" placeholder="Your thoughts, ideas, workshop notes on this page..."></textarea>
+      <button class="btn btn-primary" onclick="saveWorkshopNotes()">Save notes</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PP MODAL -->
+<div class="modal-overlay" id="edit-pp-overlay" onclick="closeEditModal(event)">
+  <div class="modal">
+    <h3>Edit prayer point</h3>
+    <div class="edit-form">
+      <label>Title</label>
+      <input type="text" id="edit-pp-title" />
+      <label>Detail</label>
+      <textarea id="edit-pp-body"></textarea>
+      <label>Type</label>
+      <select id="edit-pp-type">
+        <option value="general">📘 General</option>
+        <option value="current">🔴 Current</option>
+      </select>
+      <label>Person</label>
+      <input type="text" id="edit-pp-person" />
+      <label>Subsection</label>
+      <input type="text" id="edit-pp-subsection" />
+      <label>Archive in (days from today — this point only)</label>
+      <input type="number" id="edit-pp-days" min="1" max="365" placeholder="Leave blank to keep current" />
+    </div>
+    <div class="modal-btns" style="margin-top:12px;">
+      <button class="btn btn-primary" style="flex:2;" onclick="saveEditPP()">Save</button>
+      <button class="btn btn-cancel btn-sm" onclick="closeEditModalDirect()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://ifzcvhuhakzogwyqmccr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_gSzni8jixp5944I7PXJbGQ_tLRI9atx';
+const sb = (() => {
+  const h = { 'Content-Type':'application/json', 'apikey': SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY };
+  const req = async (path, opts={}) => {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers:{ ...h, ...opts.headers }, ...opts });
+    const d = await r.json().catch(()=>null);
+    if (!r.ok) return { data: null, error: d };
+    return { data: d, error: null };
+  };
+  return {
+    from: (table) => ({
+      select: (cols='*') => ({ order: (col, opts={}) => req(table+'?select='+cols+'&order='+col+(opts.ascending===false?'.desc':'.asc')), eq: (k,v) => req(table+'?select='+cols+'&'+k+'=eq.'+encodeURIComponent(v)), filter: (f) => req(table+'?select='+cols+'&'+f) }),
+      insert: (rows) => req(table, { method:'POST', headers:{'Prefer':'return=representation'}, body:JSON.stringify(rows) }),
+      update: (data) => ({ eq: (k,v) => req(table+'?'+k+'=eq.'+encodeURIComponent(v), { method:'PATCH', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data) }) }),
+      upsert: (data, opts={}) => req(table, { method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=representation'}, body:JSON.stringify(data) }),
+      delete: () => ({ eq: (k,v) => req(table+'?'+k+'=eq.'+encodeURIComponent(v), { method:'DELETE' }), neq: (k,v) => req(table+'?'+k+'=neq.'+encodeURIComponent(v), { method:'DELETE' }) }),
+    })
+  };
+})();
+
+function setSyncing(s) { const d=document.getElementById('sync-dot'); d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':''); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let prayers = [], prayerPoints = [], ppFilter = 'all';
+let editingPPId = null, draggedTier = null;
+let notionPages = [], allNotionPages = [];
+
+// ── DYNAMIC TIERS ─────────────────────────────────────────────────────────────
+const DEFAULT_TIERS = {};
+const DEFAULT_TIER_ORDER = [];
+
+function getTierConfig() {
+  try {
+    const s = JSON.parse(localStorage.getItem('cft-tiers') || 'null');
+    return s && s.order && s.order.length ? s : { tiers: DEFAULT_TIERS, order: DEFAULT_TIER_ORDER };
+  } catch { return { tiers: DEFAULT_TIERS, order: DEFAULT_TIER_ORDER }; }
+}
+function saveTierConfig(cfg) { localStorage.setItem('cft-tiers', JSON.stringify(cfg)); }
+function getTIERS() { return getTierConfig().tiers; }
+function getTIER_ORDER() { return getTierConfig().order; }
+
+function getRotation() {
+  // First 7 categories become the daily rotation
+  return getTierConfig().order.slice(0, 7);
+}
+
+function renderTierSelect() {
+  const sel = document.getElementById('p-tier');
+  if (!sel) return;
+  const cfg = getTierConfig();
+  if (!cfg.order.length) {
+    sel.innerHTML = '<option value="">No categories yet — add one above</option>';
+    return;
+  }
+  sel.innerHTML = cfg.order.map(k => '<option value="' + k + '">' + cfg.tiers[k] + '</option>').join('');
+}
+
+function manageTierCategories() {
+  const cfg = getTierConfig();
+  const list = cfg.order.length
+    ? cfg.order.map((k,i) => (i+1) + '. [' + k + '] ' + cfg.tiers[k] + (i < 7 ? ' ★' : '')).join('\n')
+    : '(none yet)';
+  const action = prompt('Categories (★ = in daily rotation — first 7):\n' + list + '\n\nCommands:\nADD Name\nRENAME id New Name\nDELETE id');
+  if (!action) return;
+  const parts = action.trim().split(' ');
+  const cmd = parts[0].toUpperCase();
+  if (cmd === 'ADD') {
+    const name = parts.slice(1).join(' ').trim();
+    if (!name) return;
+    const id = 'cat_' + Date.now();
+    cfg.tiers[id] = name;
+    cfg.order.push(id);
+  } else if (cmd === 'RENAME') {
+    const id = parts[1]; const name = parts.slice(2).join(' ').trim();
+    if (!cfg.tiers[id] || !name) { alert('Not found or missing name'); return; }
+    cfg.tiers[id] = name;
+  } else if (cmd === 'DELETE') {
+    const id = parts[1];
+    if (!cfg.tiers[id]) { alert('Not found'); return; }
+    if (prayers.some(p => p.tier === id)) { alert('Move all people out first'); return; }
+    delete cfg.tiers[id];
+    cfg.order = cfg.order.filter(k => k !== id);
+  } else { alert('Use ADD, RENAME, or DELETE'); return; }
+  saveTierConfig(cfg);
+  renderTierSelect(); renderPrayer(); renderToday();
+}
+
+// ── DAYS ──────────────────────────────────────────────────────────────────────
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function renderDayRow() {
+  const grid = document.getElementById('day-row');
+  const day = new Date().getDay();
+  const rotation = getRotation();
+  const TIERS = getTIERS();
+  // Update today's tier label
+  const todayTier = rotation[day % rotation.length];
+  const todayLabel = document.getElementById('today-tier-label');
+  if (todayLabel) todayLabel.textContent = TIERS[todayTier] || '—';
+  grid.innerHTML = DAYS.map((d,i) => {
+    const t = rotation[i % rotation.length];
+    const name = TIERS[t] ? TIERS[t].split(' ')[0] : '—';
+    return '<div class="day-cell' + (i===day?' today':'') + '"><div class="day-name">' + d + '</div><div class="tier-short">' + name + '</div></div>';
+  }).join('');
+}
+
+// ── VERSE OF THE DAY ──────────────────────────────────────────────────────────
+const VERSES = [
+  { ref: "Romans 8:38-39", text: "For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord." },
+  { ref: "Philippians 4:6-7", text: "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus." },
+  { ref: "Jeremiah 29:11", text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future." },
+  { ref: "Isaiah 40:31", text: "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint." },
+  { ref: "Matthew 6:33", text: "But seek first his kingdom and his righteousness, and all these things will be given to you as well." },
+  { ref: "Proverbs 3:5-6", text: "Trust in the Lord with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight." },
+  { ref: "2 Corinthians 12:9", text: "My grace is sufficient for you, for my power is made perfect in weakness. Therefore I will boast all the more gladly about my weaknesses, so that Christ's power may rest on me." },
+  { ref: "John 15:13", text: "Greater love has no one than this: to lay down one's life for one's friends." },
+  { ref: "Romans 12:2", text: "Do not conform to the pattern of this world, but be transformed by the renewing of your mind." },
+  { ref: "Psalm 16:11", text: "You make known to me the path of life; you will fill me with joy in your presence, with eternal pleasures at your right hand." },
+  { ref: "Lamentations 3:22-23", text: "Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness." },
+  { ref: "1 Thessalonians 5:16-18", text: "Rejoice always, pray continually, give thanks in all circumstances; for this is God's will for you in Christ Jesus." },
+  { ref: "Hebrews 12:1-2", text: "Let us throw off everything that hinders and the sin that so easily entangles. And let us run with perseverance the race marked out for us, fixing our eyes on Jesus, the pioneer and perfecter of faith." },
+  { ref: "James 1:5", text: "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you." },
+  { ref: "Ephesians 2:8-9", text: "For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God — not by works, so that no one can boast." },
+  { ref: "Colossians 3:23", text: "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters." },
+  { ref: "Joshua 1:9", text: "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go." },
+  { ref: "Psalm 46:10", text: "Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth." },
+  { ref: "Romans 5:8", text: "But God demonstrates his own love for us in this: While we were still sinners, Christ died for us." },
+  { ref: "Galatians 2:20", text: "I have been crucified with Christ and I no longer live, but Christ lives in me. The life I now live in the body, I live by faith in the Son of God, who loved me and gave himself for me." },
+  { ref: "Psalm 23:1", text: "The Lord is my shepherd, I lack nothing." },
+];
+
+function renderVOTD() {
+  const v = VERSES[new Date().getDate() % VERSES.length];
+  document.getElementById('votd-ref').textContent = v.ref;
+  document.getElementById('votd-text').textContent = v.text;
+}
+
+// ── PRAYERS ───────────────────────────────────────────────────────────────────
+async function loadPrayers() {
+  const { data, error } = await sb.from('prayers').select('*').order('name', {});
+  if (error) throw error;
+  prayers = data || [];
+}
+
+async function addPerson() {
+  const name = document.getElementById('p-name').value.trim();
+  const tier = document.getElementById('p-tier').value;
+  const note = document.getElementById('p-note').value.trim();
+  if (!name || !tier) return;
+  setSyncing('syncing');
+  const { data, error } = await sb.from('prayers').insert([{ name, tier, note }]);
+  if (!error) { await loadPrayers(); setSyncing('ok'); }
+  else setSyncing('error');
+  ['p-name','p-note'].forEach(id => document.getElementById(id).value = '');
+  renderPrayer(); renderToday();
+}
+
+async function delPerson(id) {
+  if (!confirm('Remove this person?')) return;
+  setSyncing('syncing');
+  await sb.from('prayers').delete().eq('id', id);
+  prayers = prayers.filter(p => p.id !== id);
+  setSyncing('ok');
+  renderPrayer(); renderToday();
+}
+
+function getPrayerOrder() {
+  try { return JSON.parse(localStorage.getItem('cft-prayer-order') || 'null') || getTIER_ORDER(); } catch { return getTIER_ORDER(); }
+}
+function savePrayerOrder(order) { localStorage.setItem('cft-prayer-order', JSON.stringify(order)); }
+
+function renderPrayer() {
+  const el = document.getElementById('prayer-list');
+  renderTierSelect();
+  const TIERS = getTIERS();
+  const TIER_ORDER = getTIER_ORDER();
+  if (!prayers.length && !TIER_ORDER.length) {
+    el.innerHTML = '<div class="empty">Add categories above, then add people</div>';
+    return;
+  }
+  const byTier = {};
+  TIER_ORDER.forEach(t => byTier[t] = []);
+  prayers.forEach(p => { if (byTier[p.tier]) byTier[p.tier].push(p); else { byTier[p.tier] = [p]; } });
+  const order = getPrayerOrder().filter(t => byTier[t] && byTier[t].length);
+  const empty = TIER_ORDER.filter(t => !byTier[t] || !byTier[t].length);
+
+  const frag = document.createDocumentFragment();
+  [...order, ...empty].filter(t => TIERS[t]).forEach(tier => {
+    const people = byTier[tier] || [];
+    const isOpen = localStorage.getItem('cft-tier-open-' + tier) !== 'false';
+    const group = document.createElement('div');
+    group.className = 'tier-group';
+    group.draggable = true;
+    group.dataset.tier = tier;
+    group.addEventListener('dragstart', e => dragTierStart(e, tier));
+    group.addEventListener('dragover', dragTierOver);
+    group.addEventListener('drop', e => dragTierDrop(e, tier));
+    group.addEventListener('dragend', dragTierEnd);
+    const header = document.createElement('div');
+    header.className = 'tier-header';
+    header.addEventListener('click', () => toggleTier(tier));
+    header.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><span class="drag-handle">⠿</span><span class="tier-header-label">' + esc(TIERS[tier]) + '</span><span class="tier-count">' + people.length + ' people</span></div><span class="tier-chevron" id="chev-tier-' + tier + '" style="transform:' + (isOpen?'rotate(0)':'rotate(-90deg)') + '">▼</span>';
+    const body = document.createElement('div');
+    body.className = 'tier-body';
+    body.id = 'tierbody-' + tier;
+    body.style.display = isOpen ? 'block' : 'none';
+    body.innerHTML = people.length ? people.map(p => renderPersonCard(p)).join('') : '<div class="empty" style="padding:12px;">No one here yet</div>';
+    group.appendChild(header);
+    group.appendChild(body);
+    frag.appendChild(group);
+  });
+  el.innerHTML = '';
+  el.appendChild(frag);
+}
+
+function renderPersonCard(p) {
+  const pps = prayerPoints.filter(pp => pp.person && pp.person.trim().toLowerCase() === p.name.trim().toLowerCase() && !pp.archived);
+  const div = document.createElement('div');
+  div.className = 'person-card';
+  const inner = document.createElement('div');
+  inner.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;';
+  const info = document.createElement('div');
+  info.innerHTML = '<div class="person-name">' + esc(p.name) + '</div>' +
+    (p.note ? '<div class="item-note">' + esc(p.note) + '</div>' : '') +
+    (pps.length ? '<div style="margin-top:5px;">' + pps.map(pp => '<span class="pp-pill">' + esc(pp.title) + '</span>').join('') + '</div>' : '');
+  const btn = document.createElement('button');
+  btn.className = 'btn-danger';
+  btn.textContent = '×';
+  btn.addEventListener('click', () => delPerson(p.id));
+  inner.appendChild(info);
+  inner.appendChild(btn);
+  div.appendChild(inner);
+  return div.outerHTML;
+}
+
+function toggleTier(tier) {
+  const b = document.getElementById('tierbody-' + tier);
+  const c = document.getElementById('chev-tier-' + tier);
+  const isOpen = b.style.display !== 'none';
+  b.style.display = isOpen ? 'none' : 'block';
+  if (c) c.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+  localStorage.setItem('cft-tier-open-' + tier, !isOpen);
+}
+function dragTierStart(e, tier) { draggedTier = tier; e.currentTarget.style.opacity = '0.5'; }
+function dragTierOver(e) { e.preventDefault(); }
+function dragTierEnd() { document.querySelectorAll('.tier-group').forEach(el => el.style.opacity = '1'); draggedTier = null; }
+function dragTierDrop(e, targetTier) {
+  e.preventDefault();
+  if (!draggedTier || draggedTier === targetTier) return;
+  const order = getPrayerOrder();
+  const fi = order.indexOf(draggedTier), ti = order.indexOf(targetTier);
+  if (fi === -1 || ti === -1) return;
+  order.splice(fi, 1); order.splice(ti, 0, draggedTier);
+  savePrayerOrder(order); renderPrayer();
+}
+
+// ── PRAYER POINTS ─────────────────────────────────────────────────────────────
+function getArchiveMs() { return 30 * 24 * 60 * 60 * 1000; }
+function daysUntilArchive(p) {
+  return Math.max(0, Math.ceil((new Date(p.created_at).getTime() + getArchiveMs() - Date.now()) / 86400000));
+}
+
+async function loadPrayerPoints() {
+  const { data, error } = await sb.from('prayer_points').select('*').order('created_at', {});
+  if (error) throw error;
+  prayerPoints = data || [];
+  autoArchive();
+}
+
+function autoArchive() {
+  prayerPoints.forEach(p => {
+    if (!p.archived && p.type === 'current' && daysUntilArchive(p) === 0) p.archived = true;
+  });
+}
+
+async function addPrayerPoint() {
+  const title = document.getElementById('pp-title').value.trim();
+  const body = document.getElementById('pp-body').value.trim();
+  const type = document.getElementById('pp-type').value;
+  const person = document.getElementById('pp-person').value.trim();
+  const subsection = document.getElementById('pp-subsection').value.trim();
+  const customDays = parseInt(document.getElementById('pp-days').value, 10);
+  if (!title) return;
+  const row = { title, body, type, person, subsection: subsection||'', archived: false, archived_at: null };
+  if (type === 'current' && customDays > 0) {
+    row.created_at = new Date(Date.now() - getArchiveMs() + customDays * 86400000).toISOString();
+  }
+  setSyncing('syncing');
+  const { data, error } = await sb.from('prayer_points').insert([row]);
+  if (!error && data) { prayerPoints.unshift(data[0]); setSyncing('ok'); }
+  else setSyncing('error');
+  ['pp-title','pp-body','pp-person','pp-subsection'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pp-days').value = '30';
+  document.getElementById('pp-type').value = 'general';
+  renderPrayerPoints(); renderToday();
+}
+
+function filterPP(f) {
+  ppFilter = f;
+  document.querySelectorAll('.prayer-subtabs .tab').forEach(t => t.classList.toggle('active', t.getAttribute('onclick').includes("'" + f + "'")));
+  renderPrayerPoints();
+}
+
+function renderPrayerPoints() {
+  const el = document.getElementById('pp-list');
+  const active = prayerPoints.filter(p => !p.archived);
+  const archived = prayerPoints.filter(p => p.archived);
+  let items = ppFilter==='all' ? active : ppFilter==='general' ? active.filter(p=>p.type==='general') : ppFilter==='current' ? active.filter(p=>p.type==='current') : archived;
+  const isArchive = ppFilter === 'archive';
+  if (!items.length) { el.innerHTML = '<div class="empty">No prayer points here</div>'; return; }
+  el.innerHTML = items.map(p => renderPPItem(p, isArchive)).join('');
+}
+
+function renderPPItem(p, isArchive) {
+  const isGen = p.type === 'general';
+  const typeLabel = isGen
+    ? '<span class="pt-type-tag pt-type-general">General</span>'
+    : '<span class="pt-type-tag pt-type-current">Current</span>';
+  const dl = isGen ? null : daysUntilArchive(p);
+  const expiryInfo = (!isGen && !p.archived && dl !== null)
+    ? '<div class="' + (dl<=7?'expires-soon':'expires-ok') + '">⏱ Archives in ' + dl + ' day' + (dl===1?'':'s') + '</div>' : '';
+  const addedDate = new Date(p.created_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+  const id = p.id;
+  const restoreBtn = '<button class="btn-green" onclick="restorePP(\'' + id + '\')">↩</button>';
+  const delBtn = '<button class="btn-danger" onclick="delPP(\'' + id + '\')">×</button>';
+  const editBtn = '<button class="btn-sm" style="font-size:11px;padding:3px 7px;" onclick="openEditPP(\'' + id + '\')">✏️</button>';
+  const archBtn = !isGen ? '<button class="btn-archive" onclick="manualArchivePP(\'' + id + '\')">Archive</button>' : '';
+  const btns = isArchive
+    ? '<div class="row-btns">' + restoreBtn + delBtn + '</div>'
+    : '<div class="row-btns">' + editBtn + archBtn + delBtn + '</div>';
+  const personHtml = p.person ? '<div class="item-sub">👤 ' + esc(p.person) + '</div>' : '';
+  const bodyHtml = p.body ? '<div class="item-note">' + esc(p.body) + '</div>' : '';
+  return '<div class="card" style="padding:11px 12px;' + (isArchive?'opacity:0.6;':'') + '"><div class="item" style="border:none;padding:0;"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(p.title) + typeLabel + '</div>' + personHtml + bodyHtml + '<div class="expires-ok" style="margin-top:3px;">Added ' + addedDate + '</div>' + expiryInfo + '</div>' + btns + '</div></div>';
+}
+
+async function manualArchivePP(id) {
+  const now = new Date().toISOString();
+  setSyncing('syncing');
+  await sb.from('prayer_points').update({ archived: true, archived_at: now }).eq('id', id);
+  prayerPoints = prayerPoints.map(p => p.id===id ? {...p, archived:true, archived_at:now} : p);
+  setSyncing('ok');
+  renderPrayerPoints(); renderToday();
+}
+
+async function restorePP(id) {
+  const freshDate = new Date().toISOString();
+  setSyncing('syncing');
+  await sb.from('prayer_points').update({ archived: false, archived_at: null, created_at: freshDate }).eq('id', id);
+  prayerPoints = prayerPoints.map(p => p.id===id ? {...p, archived:false, archived_at:null, created_at:freshDate} : p);
+  setSyncing('ok');
+  renderPrayerPoints(); renderToday();
+}
+
+async function delPP(id) {
+  if (!confirm('Delete this prayer point?')) return;
+  setSyncing('syncing');
+  await sb.from('prayer_points').delete().eq('id', id);
+  prayerPoints = prayerPoints.filter(p => p.id !== id);
+  setSyncing('ok');
+  renderPrayerPoints(); renderToday();
+}
+
+function openEditPP(id) {
+  const pp = prayerPoints.find(p => p.id === id);
+  if (!pp) return;
+  editingPPId = id;
+  document.getElementById('edit-pp-title').value = pp.title || '';
+  document.getElementById('edit-pp-body').value = pp.body || '';
+  document.getElementById('edit-pp-type').value = pp.type || 'general';
+  document.getElementById('edit-pp-person').value = pp.person || '';
+  document.getElementById('edit-pp-subsection').value = pp.subsection || '';
+  document.getElementById('edit-pp-days').value = '';
+  document.getElementById('edit-pp-overlay').classList.add('open');
+}
+function closeEditModal(e) { if (e.target === document.getElementById('edit-pp-overlay')) closeEditModalDirect(); }
+function closeEditModalDirect() { document.getElementById('edit-pp-overlay').classList.remove('open'); editingPPId = null; }
+async function saveEditPP() {
+  if (!editingPPId) return;
+  const title = document.getElementById('edit-pp-title').value.trim();
+  const body = document.getElementById('edit-pp-body').value.trim();
+  const type = document.getElementById('edit-pp-type').value;
+  const person = document.getElementById('edit-pp-person').value.trim();
+  const subsection = document.getElementById('edit-pp-subsection').value.trim();
+  const daysVal = parseInt(document.getElementById('edit-pp-days').value, 10);
+  if (!title) return;
+  const updates = { title, body, type, person, subsection };
+  if (!isNaN(daysVal) && type === 'current') {
+    updates.created_at = new Date(Date.now() - getArchiveMs() + daysVal * 86400000).toISOString();
+  }
+  setSyncing('syncing');
+  await sb.from('prayer_points').update(updates).eq('id', editingPPId);
+  prayerPoints = prayerPoints.map(p => p.id===editingPPId ? {...p, ...updates} : p);
+  setSyncing('ok');
+  closeEditModalDirect();
+  renderPrayerPoints(); renderToday();
+}
+
+// ── TODAY ─────────────────────────────────────────────────────────────────────
+function renderToday() {
+  const day = new Date().getDay();
+  const rotation = getRotation();
+  const tier = rotation[day % rotation.length];
+  renderDayRow();
+
+  const allActive = prayerPoints.filter(p => !p.archived);
+  const currentPPs = allActive.filter(p => p.type === 'current');
+  const oneDayLeft = currentPPs.filter(p => daysUntilArchive(p) <= 1);
+  const oneDayIds = new Set(oneDayLeft.map(p => p.id));
+  const dateSeed = parseInt(new Date().toISOString().split('T')[0].replace(/-/g,''), 10);
+  const remaining = currentPPs.filter(p => !oneDayIds.has(p.id));
+  const shuffled = [...remaining].sort((a,b) => {
+    const ha = (dateSeed + a.id.replace(/-/g,'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)) % 9973;
+    const hb = (dateSeed + b.id.replace(/-/g,'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)) % 9973;
+    return ha - hb;
+  });
+  const random3 = shuffled.slice(0, 3);
+  const shownIds = new Set([...oneDayIds, ...random3.map(p=>p.id)]);
+  const todayPeople = new Set(prayers.filter(p => p.tier === tier).map(p => p.name.trim().toLowerCase()));
+  const tierPoints = allActive.filter(p => !shownIds.has(p.id) && p.person && todayPeople.has(p.person.trim().toLowerCase()))
+    .sort((a,b) => {
+      const ha = (dateSeed + a.id.replace(/-/g,'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)) % 9973;
+      const hb = (dateSeed + b.id.replace(/-/g,'').split('').reduce((s,c)=>s+c.charCodeAt(0),0)) % 9973;
+      return ha - hb;
+    }).slice(0, 3);
+  const todayPPs = [...oneDayLeft, ...random3, ...tierPoints];
+
+  const ppEl = document.getElementById('today-prayerpoints');
+  if (!todayPPs.length) { ppEl.innerHTML = '<div class="empty">No prayer points today</div>'; return; }
+  const TIERS = getTIERS();
+  ppEl.innerHTML = todayPPs.map((p,i) => {
+    const isCurrent = p.type === 'current';
+    const dl = isCurrent ? daysUntilArchive(p) : null;
+    const isUrgent = oneDayIds.has(p.id);
+    const isTier = !shownIds.has(p.id) || tierPoints.find(t=>t.id===p.id);
+    const tag = isUrgent
+      ? '<span style="font-size:10px;background:rgba(255,69,96,0.2);color:#ff4560;padding:1px 6px;border-radius:99px;margin-left:5px;font-weight:600;">⏱ ' + dl + 'd</span>'
+      : tierPoints.find(t=>t.id===p.id)
+        ? '<span style="font-size:10px;background:rgba(123,97,255,0.2);color:#7b61ff;padding:1px 6px;border-radius:99px;margin-left:5px;font-weight:600;">' + (TIERS[tier]||'Today') + '</span>'
+        : '<span style="font-size:10px;background:rgba(74,158,255,0.15);color:#4a9eff;padding:1px 6px;border-radius:99px;margin-left:5px;font-weight:600;">Today</span>';
+    const personHtml = p.person ? '<div class="item-sub">👤 ' + esc(p.person) + '</div>' : '';
+    const bodyHtml = p.body ? '<div class="item-note">' + esc(p.body) + '</div>' : '';
+    return '<div class="item"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(p.title) + tag + '</div>' + personHtml + bodyHtml + '</div></div>';
+  }).join('');
+}
+
+// ── NOTION WORKSHOP ───────────────────────────────────────────────────────────
+async function loadNotionPages() {
+  // Load from Supabase notion_pages table
+  try {
+    const { data, error } = await sb.from('notion_pages').select('*').order('updated_at', { ascending: false });
+    if (error || !data) { allNotionPages = []; renderNotionPages(); return; }
+    allNotionPages = data;
+    notionPages = data;
+    renderNotionPages();
+  } catch(e) {
+    allNotionPages = [];
+    renderNotionPages();
+  }
+}
+
+function filterNotionPages() {
+  const q = document.getElementById('notion-search').value.toLowerCase();
+  notionPages = q ? allNotionPages.filter(p => (p.title||'').toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q)) : allNotionPages;
+  renderNotionPages();
+}
+
+function renderNotionPages() {
+  const el = document.getElementById('notion-pages');
+  if (!notionPages.length) {
+    el.innerHTML = '<div class="empty">No pages yet. Add pages to your <code>notion_pages</code> table in Supabase, or sync from Notion using the API.</div>';
+    return;
+  }
+  const nfrag = document.createDocumentFragment();
+  notionPages.forEach(p => {
+    const date = p.updated_at ? new Date(p.updated_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'}) : '';
+    const card = document.createElement('div');
+    card.className = 'notion-card';
+    card.innerHTML = '<div class="notion-title">' + esc(p.title||'Untitled') + '</div><div class="notion-meta">' + (p.category ? esc(p.category) + ' · ' : '') + date + '</div>';
+    card.addEventListener('click', () => openNotionPage(p.id));
+    nfrag.appendChild(card);
+  });
+  el.innerHTML = '';
+  el.appendChild(nfrag);
+}
+
+function openNotionPage(id) {
+  const p = allNotionPages.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('notion-detail-card').style.display = 'block';
+  document.getElementById('notion-detail-title').textContent = p.title || 'Untitled';
+  document.getElementById('notion-detail-body').innerHTML = (p.content || 'No content').replace(/\n/g, '<br>');
+  const saved = localStorage.getItem('cft-workshop-' + id) || '';
+  document.getElementById('workshop-notes').value = saved;
+  document.getElementById('workshop-notes').dataset.pageId = id;
+  document.getElementById('notion-detail-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function saveWorkshopNotes() {
+  const ta = document.getElementById('workshop-notes');
+  const id = ta.dataset.pageId;
+  if (!id) return;
+  localStorage.setItem('cft-workshop-' + id, ta.value);
+  const btn = document.querySelector('#notion-detail-card .btn-primary');
+  if (btn) { const orig = btn.textContent; btn.textContent = 'Saved ✓'; setTimeout(() => btn.textContent = orig, 1500); }
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + t + "'")));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === t));
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  setSyncing('syncing');
+  await Promise.allSettled([
+    loadPrayers().catch(e => console.warn('prayers:', e)),
+    loadPrayerPoints().catch(e => console.warn('prayerpoints:', e)),
+    loadNotionPages().catch(e => console.warn('notion:', e)),
+  ]);
+  setSyncing('ok');
+  renderVOTD();
+  renderAll();
+  document.getElementById('loading-screen').style.display = 'none';
+}
+
+function renderAll() {
+  renderTierSelect();
+  renderToday();
+  renderPrayer();
+  renderPrayerPoints();
+}
+
+init();
+</script>
+</body>
+</html>
