@@ -11,24 +11,37 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --navy: #2E4057;
-    --navy-dark: #1e2d3d;
-    --navy-light: #3d5a78;
-    --cream: #f5f4f0;
-    --white: #ffffff;
-    --border: #e8e5e0;
-    --text: #1a1a1a;
-    --muted: #888;
-    --purple: #4527a0;
-    --purple-light: #ede7f6;
-    --red: #c62828;
-    --red-light: #fce4ec;
-    --blue: #0277bd;
-    --blue-light: #e8f4fd;
-    --green: #2e7d32;
-    --green-light: #e8f5e9;
-    --orange: #e65100;
-    --orange-light: #fff3e0;
+    --navy: #1e2a38;
+    --navy-dark: #141c26;
+    --navy-light: #2e3f54;
+    --cream: #f2ede4;
+    --white: #faf7f2;
+    --border: #d8d0c4;
+    --text: #1a1610;
+    --muted: #7a7060;
+    --surface: #2c2720;
+    /* Rarity fluid accent colours */
+    --legendary: #d4882a;
+    --legendary-light: #fdf0dc;
+    --epic: #8b44c8;
+    --epic-light: #f0e8fc;
+    --rare: #3a6ec0;
+    --rare-light: #e4eefa;
+    --uncommon: #3a9a3a;
+    --uncommon-light: #e4f4e4;
+    --common: #7a8fa8;
+    --common-light: #eaeff4;
+    /* Keep functional colours mapped to rarity feel */
+    --purple: #8b44c8;
+    --purple-light: #f0e8fc;
+    --red: #c03030;
+    --red-light: #fce8e8;
+    --blue: #3a6ec0;
+    --blue-light: #e4eefa;
+    --green: #3a9a3a;
+    --green-light: #e4f4e4;
+    --orange: #d4882a;
+    --orange-light: #fdf0dc;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -46,7 +59,7 @@
 
   /* ── HEADER ── */
   header {
-    background: var(--navy);
+    background: linear-gradient(135deg, var(--navy-dark), var(--navy));
     color: white;
     padding: 12px 16px;
     padding-top: calc(12px + var(--safe-top));
@@ -56,19 +69,21 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-bottom: 1px solid rgba(212,136,42,0.2);
+    box-shadow: 0 2px 12px rgba(14,20,28,0.35);
   }
-  header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-  header p { font-size: 11px; opacity: 0.65; margin-top: 1px; }
-  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
-  .sync-dot.syncing { background: #ff9800; animation: pulse 1s infinite; }
-  .sync-dot.error { background: #f44336; }
+  header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: #f0c878; }
+  header p { font-size: 11px; opacity: 0.6; margin-top: 1px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--uncommon); flex-shrink: 0; }
+  .sync-dot.syncing { background: var(--legendary); animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--red); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
   /* ── TABS ── */
   .tabs {
     display: flex;
     background: var(--white);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -85,10 +100,11 @@
     cursor: pointer;
     white-space: nowrap;
     border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
     transition: all 0.15s;
     flex-shrink: 0;
   }
-  .tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .tab.active { color: var(--legendary); border-bottom-color: var(--legendary); font-weight: 700; }
 
   /* ── SECTIONS ── */
   .section { display: none; padding: 14px; max-width: 600px; margin: 0 auto; padding-bottom: calc(80px + var(--safe-bottom)); }
@@ -116,8 +132,8 @@
 
   /* ── BUTTONS ── */
   .btn { padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--navy); color: white; width: 100%; justify-content: center; }
-  .btn-primary:active { background: var(--navy-dark); transform: scale(0.98); }
+  .btn-primary { background: var(--legendary); color: white; width: 100%; justify-content: center; }
+  .btn-primary:active { background: #b87020; transform: scale(0.98); }
   .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: white; color: #666; cursor: pointer; }
   .btn-danger { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; padding: 2px 6px; line-height: 1; }
   .btn-danger:active { color: #e44; }
@@ -143,24 +159,24 @@
   .b-study { background: var(--blue-light); color: #0d47a1; }
 
   /* ── TODAY BANNER ── */
-  .today-banner { background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: white; border-radius: 12px; padding: 16px; margin-bottom: 10px; }
-  .today-banner .tier { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
-  .today-banner .people { font-size: 13px; opacity: 0.8; line-height: 1.4; }
+  .today-banner { background: linear-gradient(135deg, #1e2a38, #2e3f54 60%, #1a3040); color: white; border-radius: 12px; padding: 16px; margin-bottom: 10px; border: 1px solid rgba(212,136,42,0.25); box-shadow: 0 4px 16px rgba(20,28,38,0.3), inset 0 1px 0 rgba(212,136,42,0.15); }
+  .today-banner .tier { font-size: 17px; font-weight: 700; margin-bottom: 3px; color: #f0c878; }
+  .today-banner .people { font-size: 13px; opacity: 0.85; line-height: 1.4; }
 
   /* ── DAY ROW ── */
   .day-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
   .day-cell { border-radius: 8px; padding: 6px 3px; text-align: center; font-size: 9px; border: 1px solid transparent; }
   .day-cell .day-name { font-weight: 700; color: #555; }
   .day-cell .tier-short { margin-top: 1px; font-size: 8px; font-weight: 600; opacity: 0.8; }
-  .day-cell.today { border-color: var(--navy) !important; box-shadow: 0 0 0 2px var(--navy); }
-  .day-cell.today .day-name, .day-cell.today .tier-short { color: var(--navy) !important; font-weight: 800; }
-  .dc-0 { background: #fce4ec; } /* Sun — pink */
-  .dc-1 { background: #fff3e0; } /* Mon — peach */
-  .dc-2 { background: #fff9c4; } /* Tue — yellow */
-  .dc-3 { background: #e8f5e9; } /* Wed — mint */
-  .dc-4 { background: #e3f2fd; } /* Thu — sky */
-  .dc-5 { background: #ede7f6; } /* Fri — lavender */
-  .dc-6 { background: #fce4ec; } /* Sat — pink */
+  .day-cell.today { border-color: var(--legendary) !important; box-shadow: 0 0 0 2px var(--legendary); }
+  .day-cell.today .day-name, .day-cell.today .tier-short { color: var(--legendary) !important; font-weight: 800; }
+  .dc-0 { background: var(--epic-light); }     /* Sun — epic purple */
+  .dc-1 { background: var(--legendary-light); } /* Mon — legendary gold */
+  .dc-2 { background: var(--uncommon-light); }  /* Tue — uncommon green */
+  .dc-3 { background: var(--rare-light); }      /* Wed — rare blue */
+  .dc-4 { background: var(--common-light); }    /* Thu — common grey */
+  .dc-5 { background: var(--epic-light); }      /* Fri — epic purple */
+  .dc-6 { background: var(--legendary-light); } /* Sat — legendary gold */
 
   /* ── TIER LABEL ── */
   .tier-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 14px 0 6px; padding-left: 2px; }
@@ -265,7 +281,7 @@
   .res-item-text { flex: 1; }
   .res-add-row { display: flex; gap: 6px; margin-top: 8px; }
   .res-add-row input { margin: 0; flex: 1; }
-  .btn-xs { padding: 8px 12px; font-size: 12px; border-radius: 6px; background: var(--navy); color: white; border: none; cursor: pointer; white-space: nowrap; }
+  .btn-xs { padding: 8px 12px; font-size: 12px; border-radius: 6px; background: var(--legendary); color: white; border: none; cursor: pointer; white-space: nowrap; }
   .btn-new-cat { width: 100%; margin-top: 6px; background: var(--green-light); color: var(--green); border: none; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
 
   /* ── LOADING SCREEN ── */  /* ── LOADING SCREEN ── */
