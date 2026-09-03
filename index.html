@@ -581,6 +581,16 @@ function autoArchive() {
   });
 }
 
+// ── LOCAL NAME TAG ────────────────────────────────────────────────────────────
+function getUserName() {
+  let name = localStorage.getItem('figtree_username');
+  if (!name) {
+    name = (window.prompt('Your name (shown next to what you add — remembered on this device only):') || '').trim();
+    if (name) localStorage.setItem('figtree_username', name);
+  }
+  return name || 'Someone';
+}
+
 async function addPrayerPoint() {
   const title = document.getElementById('pp-title').value.trim();
   const body = document.getElementById('pp-body').value.trim();
@@ -589,7 +599,7 @@ async function addPrayerPoint() {
   const subsection = document.getElementById('pp-subsection').value.trim();
   const customDays = parseInt(document.getElementById('pp-days').value, 10);
   if (!title) return;
-  const row = { title, body, type, person, subsection: subsection||'', archived: false, archived_at: null };
+  const row = { title, body, type, person, subsection: subsection||'', archived: false, archived_at: null, added_by: getUserName() };
   if (type === 'current' && customDays > 0) {
     row.created_at = new Date(Date.now() - getArchiveMs() + customDays * 86400000).toISOString();
   }
@@ -628,6 +638,7 @@ function renderPPItem(p, isArchive) {
   const expiryInfo = (!isGen && !p.archived && dl !== null)
     ? '<div class="' + (dl<=7?'expires-soon':'expires-ok') + '">⏱ Archives in ' + dl + ' day' + (dl===1?'':'s') + '</div>' : '';
   const addedDate = new Date(p.created_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'});
+  const addedBy = p.added_by ? ' by ' + esc(p.added_by) : '';
   const id = p.id;
   const restoreBtn = '<button class="btn-green" onclick="restorePP(\'' + id + '\')">↩</button>';
   const delBtn = '<button class="btn-danger" onclick="delPP(\'' + id + '\')">×</button>';
@@ -638,7 +649,7 @@ function renderPPItem(p, isArchive) {
     : '<div class="row-btns">' + editBtn + archBtn + delBtn + '</div>';
   const personHtml = p.person ? '<div class="item-sub">👤 ' + esc(p.person) + '</div>' : '';
   const bodyHtml = p.body ? '<div class="item-note">' + esc(p.body) + '</div>' : '';
-  return '<div class="card" style="padding:11px 12px;' + (isArchive?'opacity:0.6;':'') + '"><div class="item" style="border:none;padding:0;"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(p.title) + typeLabel + '</div>' + personHtml + bodyHtml + '<div class="expires-ok" style="margin-top:3px;">Added ' + addedDate + '</div>' + expiryInfo + '</div>' + btns + '</div></div>';
+  return '<div class="card" style="padding:11px 12px;' + (isArchive?'opacity:0.6;':'') + '"><div class="item" style="border:none;padding:0;"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(p.title) + typeLabel + '</div>' + personHtml + bodyHtml + '<div class="expires-ok" style="margin-top:3px;">Added ' + addedDate + addedBy + '</div>' + expiryInfo + '</div>' + btns + '</div></div>';
 }
 
 async function manualArchivePP(id) {
@@ -826,7 +837,8 @@ function renderResources() {
     const link = r.url ? '<div class="item-sub">🔗 <a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent);">' + esc(r.url) + '</a></div>' : '';
     const desc = r.description ? '<div class="item-note">' + esc(r.description) + '</div>' : '';
     const cat = r.category ? '<span class="pt-type-tag pt-type-general">' + esc(r.category) + '</span>' : '';
-    return '<div class="card" style="padding:11px 12px;"><div class="item" style="border:none;padding:0;"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(r.title) + cat + '</div>' + link + desc + '</div>' +
+    const by = r.added_by ? '<div class="item-note" style="opacity:0.6;">Added by ' + esc(r.added_by) + '</div>' : '';
+    return '<div class="card" style="padding:11px 12px;"><div class="item" style="border:none;padding:0;"><div style="flex:1;min-width:0;"><div class="item-name">' + esc(r.title) + cat + '</div>' + link + desc + by + '</div>' +
       '<div class="row-btns"><button class="btn-danger" onclick="delResource(\'' + r.id + '\')">×</button></div></div></div>';
   }).join('');
 }
@@ -838,7 +850,7 @@ async function addResource() {
   const category = document.getElementById('res-category').value.trim();
   if (!title) return;
   setSyncing('syncing');
-  const { data, error } = await sb.from('resources').insert([{ title, url, description, category }]);
+  const { data, error } = await sb.from('resources').insert([{ title, url, description, category, added_by: getUserName() }]);
   if (!error && data) { resources.unshift(data[0]); setSyncing('ok'); } else setSyncing('error');
   ['res-title','res-url','res-desc','res-category'].forEach(id => document.getElementById(id).value = '');
   renderResources();
